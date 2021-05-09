@@ -6,7 +6,7 @@ Face mask detection system which detects whether a person is wearing a mask or n
 
 1. Clone the repo
 ```
-$ git clone https://github.com/chandrikadeb7/Face-Mask-Detection.git
+$ git clone https://github.com/rutuja1111/CovidFaceMaskDetection.git
 ```
 
 2. Change your directory to the cloned repo 
