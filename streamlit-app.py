@@ -17,7 +17,7 @@ def local_css(file_name):
 	with open(file_name) as f:
 		st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 	
-def mask_detection():
+def face_mask_detection():
 
 	local_css("css/styles.css")
 	st.markdown('<h1 align="center">😷 Covid-19 Face Mask Detection using YOLOv4</h1>', unsafe_allow_html=True)
@@ -62,23 +62,4 @@ def mask_detection():
 				st.markdown('<h3 align="left">Inference as JSON</h3>', unsafe_allow_html=True)
 				st.json(response)
 
-mask_detection()
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+face_mask_detection()
