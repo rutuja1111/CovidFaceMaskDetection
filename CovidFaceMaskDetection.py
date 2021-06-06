@@ -39,14 +39,18 @@ class CovidFaceMaskDetection():
 
         npimg = np.fromstring(self.image, np.uint8)
         img = cv2.imdecode(npimg, cv2.IMREAD_UNCHANGED)
+        #img = cv2.imread(self.image)
+        #img = cv2.resize(img, None, fx=0.4, fy=0.4)
         height, width, channels = img.shape
-        return img, height, width
+        return img, height, width, channels
 
-    def load_image_streamlit(self):
-        img = cv2.imread(self.image)
-        img = cv2.resize(img, None, fx=0.4, fy=0.4)
+    def load_image_streamlit(self, our_image):
+        new_img = np.array(our_image.convert('RGB'))
+        img = cv2.cvtColor(new_img, 1)
+        # img = cv2.imread(self.image)
+        # img = cv2.resize(img, None, fx=0.4, fy=0.4)
         height, width, channels = img.shape
-        return img, height, width
+        return img, height, width, channels
 
     def detect_objects(self, img):
         
@@ -79,9 +83,7 @@ class CovidFaceMaskDetection():
                     class_ids.append(class_id)
         return boxes, confs, class_ids
 
-    def draw_labels(self, boxes, confs, class_ids, img):
-
-        global RGB_img
+    def draw_labels(self, boxes, confs, class_ids, img, webcam=False):
 
         with open(COVID_FACE_MASK_DETECTION_NAMES, "r") as f:
             classes = [line.strip() for line in f.readlines()]
@@ -92,8 +94,6 @@ class CovidFaceMaskDetection():
         detected_labels = []
 
         indexes = cv2.dnn.NMSBoxes(boxes, confs, 0.5, 0.4)
-        font = cv2.FONT_HERSHEY_PLAIN
-        
 
         for i in range(len(boxes)):
             if i in indexes:
@@ -110,23 +110,26 @@ class CovidFaceMaskDetection():
                 detected_labels.append({'bounding_box_coordinates':{'x_top':x,'y_top':y,'width':w,'height':h},\
                                         'label':label, 'confidence': confidence})
               
-                #img = cv2.imread(self.image)
+                color = (0, 255, 0) if label == "mask" else (0, 0, 255)
 
                 if label == "mask":
                     with_mask_count += 1
-                    cv2.rectangle(img, (x,y), (x+w, y+h), (255, 0, 0), 2)
-                    cv2.putText(img, label, (x, y + 10), font, 1.5, (0,255,0), 2)
+                    cv2.rectangle(img, (x,y), (x+w, y+h), (255, 0, 0), 1)
+                    cv2.putText(img, label, (x, y + 10), cv2.FONT_HERSHEY_SIMPLEX, .45, color, 1)
                 else:
                     without_mask_count += 1
-                    cv2.rectangle(img, (x,y), (x+w, y+h), (255, 0, 0), 2)
-                    cv2.putText(img, label, (x, y + 10), font, 1.5, (0,0,255), 2)
+                    cv2.rectangle(img, (x,y), (x+w, y+h), (255, 0, 0), 1)
+                    cv2.putText(img, label, (x, y + 10), cv2.FONT_HERSHEY_SIMPLEX, .45, color, 1)
 
-        RGB_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imwrite(COVID_FACE_MASK_DETECTION_IMAGES + "detected_image.jpg", img)
-        #cv2.imshow("Image", img)
+
+        if webcam:
+            cv2.imshow("Real-time Covid-19 Face Mask Detection using YOLOv4", img)
+
         response = {'results':detected_labels, 'total_people_count':people,'with_mask_count':with_mask_count,\
                     'without_mask_count':without_mask_count,'status':'ok','error': False, 'algorithm':'YOLOv4'}
-        return response , RGB_img
+       
+        return img, response 
        
     def start_webcam(self):
         
@@ -138,11 +141,16 @@ class CovidFaceMaskDetection():
         cap = self.start_webcam()
         while True:
 
+            pprint("Real-time Covid-19 Face Mask Detector is Live..")
             _, frame = cap.read()
             height, width, channels = frame.shape
             blob, outputs = self.detect_objects(frame)
             boxes, confs, class_ids = self.get_box_dimensions(outputs, height, width)
-            response = self.draw_labels(boxes, confs, class_ids, frame)
+            detected_image, response = self.draw_labels(boxes, confs, class_ids, frame, webcam=True)
+            pprint("------------------------------------------------------")
+            print("Real-time Logs: ", response)
+            pprint("------------------------------------------------------")
+
             key = cv2.waitKey(1)
             if key == 27:
                 break
@@ -151,30 +159,28 @@ class CovidFaceMaskDetection():
     def detect_mask_in_image(self): 
     
         start_time = time.time()
-        image, height, width = self.load_image()
+        image, height, width, channels = self.load_image()
         blob, outputs = self.detect_objects(image)
-        boxes, confs, class_ids = self.get_box_dimensions(outputs, height, width)
-        response, RGB_img = self.draw_labels(boxes, confs, class_ids, image)
+        boxes, confs, class_ids = self.get_box_dimensions(outputs, height, width)    
+        detected_image, response = self.draw_labels(boxes, confs, class_ids, image)
         end_time = time.time() - start_time
         response['inference_time_seconds'] = str(round(end_time,2))
-        return response, RGB_img
+        return response
 
-    def detect_mask_in_image_streamlit(self): 
+    def detect_mask_in_image_streamlit(self, our_image): 
     
         start_time = time.time()
-        image, height, width = self.load_image_streamlit()
+        image, height, width, channels = self.load_image_streamlit(our_image)
         blob, outputs = self.detect_objects(image)
         boxes, confs, class_ids = self.get_box_dimensions(outputs, height, width)
-        response, RGB_img = self.draw_labels(boxes, confs, class_ids, image)
+        detected_image, response = self.draw_labels(boxes, confs, class_ids, image)
         end_time = time.time() - start_time
         response['inference_time_seconds'] = str(round(end_time,2))
-        return response, RGB_img
+        return detected_image, response
 
-'''if __name__ == "__main__":
+if __name__ == "__main__":
 
     obj = CovidFaceMaskDetection('input_images/pic2.jpg','jpg')
-    response, RGB_img = obj.detect_mask_in_image_streamlit()
-    pprint(response)'''
-    
-
+    obj.detect_mask_in_webcam()
+    #pprint(response)
     #obj.detect_mask_in_image()

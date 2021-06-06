@@ -4,3 +4,4 @@ opencv-contrib-python==3.4.13.47
 imutils
 Flask
 Pillow
+streamlit==0.79.0
