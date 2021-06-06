@@ -2,7 +2,7 @@
 
 Face mask detection system which detects whether a person is wearing a mask or not.
 
-## ??&nbsp; Installation
+## 🚀&nbsp; Installation
 
 1. Clone the repo
 ```
@@ -38,17 +38,18 @@ To run the Face Mask Detector webapp using Streamlit
 ```
 $ streamlit run streamlit-app.py 
 ```
-## Frontend - User Interface
 
-<p align="center">
-  <img src="readme_images/streamlit-1.PNG">
-</p>
+## Front-end User Interface (UI)
+
 <p align="center">Upload Images</p>
-
 <p align="center">
   <img src="readme_images/streamlit-1.PNG">
 </p>
+
 <p align="center">Face Mask Detector Results</p>
+<p align="center">
+  <img src="readme_images/streamlit-2.PNG">
+</p>
 
 ## REST APIs
 
