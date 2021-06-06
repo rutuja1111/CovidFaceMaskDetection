@@ -5,3 +5,4 @@ imutils
 Flask
 Pillow
 streamlit==0.79.0
+email-to
