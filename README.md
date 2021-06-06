@@ -1,6 +1,6 @@
 # Real-time Covid-19 Face Mask Detection using YOLOv4
 
-Real-time Face mask detection system which detects whether a person is wearing a mask or not and if people without masks are detected then alert mail is send to the face mask detector system admin.
+Real-time Face Mask Detection System detects whether a person is wearing a mask or not and if people without masks are detected then alert mail is send to the face mask detector system admin.
 
 ![](readme_images/system-overview.PNG)
 
