@@ -1,6 +1,6 @@
-# Face Mask Detection 
+# Covid-19 Face Mask Detection System using YOLOv4
 
-Face mask detection system which detects whether a person is wearing a mask or not.
+Face mask detection system which detects whether a person is wearing a mask or not and if people without masks are detected then alert mail is send to the face mask detector system admin.
 
 ## 🚀&nbsp; Installation
 
@@ -59,7 +59,7 @@ $ streamlit run streamlit-app.py
 
 `POST /detect_mask`
 
-    curl --request POST --url http://localhost:5000/detect_mask --header 'ConficenceThreshold: 0.5' --header 'Content-Type: multipart/form-data; boundary=---011000010111000001101001' --header 'File-Type: jpg' --header 'NMSThreshold: 0.5' --form 'file=@input_images\pic1.jpg' 
+    curl --request POST --url http://localhost:5000/detect_mask --header 'ConfidenceThreshold: 0.5' --header 'Content-Type: multipart/form-data; boundary=---011000010111000001101001' --header 'File-Type: jpg' --header 'NMSThreshold: 0.5' --form 'file=@input_images\pic1.jpg' 
 
 #### Response
 
