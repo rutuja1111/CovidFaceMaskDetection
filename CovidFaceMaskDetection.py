@@ -2,9 +2,14 @@ import cv2
 import time
 import os
 import math
+import smtplib
 import numpy as np 
 from PIL import Image
 from pprint import pprint
+from email import encoders
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
 
 COVID_FACE_MASK_DETECTION_CONFIG = 'cfg/yolov4_train.cfg'
 COVID_FACE_MASK_DETECTION_WEIGHTS = 'weights/yolov4_train_3000.weights'
@@ -13,7 +18,7 @@ COVID_FACE_MASK_DETECTION_IMAGES = 'results/'
 
 class CovidFaceMaskDetection():
 
-    def __init__(self, image=None, image_type=None, confidence_threshold=0.5, nms_threshold=0.5):
+    def __init__(self, image=None, image_type=None, confidence_threshold=0.3, nms_threshold=0.4):
 
         self.image = image
         self.image_type = image_type
@@ -54,7 +59,8 @@ class CovidFaceMaskDetection():
 
     def detect_objects(self, img):
         
-        blob = cv2.dnn.blobFromImage(img, scalefactor=0.00392, size=(320, 320), mean=(0, 0, 0), swapRB=True, crop=False)
+        blob = cv2.dnn.blobFromImage(img, scalefactor=0.00392, size=(320, 320), mean=(0, 0, 0), \
+                        swapRB=True, crop=False)
         self.net.setInput(blob)
         outputs = self.net.forward(self.output_layers)
         return blob, outputs
@@ -71,7 +77,7 @@ class CovidFaceMaskDetection():
                 class_id = np.argmax(scores)
                 conf = scores[class_id]
 
-                if conf > 0.3:
+                if conf > self.confidence_threshold:
                     center_x = int(detect[0] * width)
                     center_y = int(detect[1] * height)
                     w = int(detect[2] * width)
@@ -93,7 +99,7 @@ class CovidFaceMaskDetection():
         without_mask_count = 0
         detected_labels = []
 
-        indexes = cv2.dnn.NMSBoxes(boxes, confs, 0.5, 0.4)
+        indexes = cv2.dnn.NMSBoxes(boxes, confs, self.confidence_threshold, self.nms_threshold)
 
         for i in range(len(boxes)):
             if i in indexes:
@@ -121,7 +127,11 @@ class CovidFaceMaskDetection():
                     cv2.rectangle(img, (x,y), (x+w, y+h), (255, 0, 0), 1)
                     cv2.putText(img, label, (x, y + 10), cv2.FONT_HERSHEY_SIMPLEX, .45, color, 1)
 
-        cv2.imwrite(COVID_FACE_MASK_DETECTION_IMAGES + "detected_image.jpg", img)
+        detected_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        cv2.imwrite(COVID_FACE_MASK_DETECTION_IMAGES + "detected_image.jpg", detected_image)
+
+        if without_mask_count != 0:
+            self.send_mail_to_admin(without_mask_count)
 
         if webcam:
             cv2.imshow("Real-time Covid-19 Face Mask Detection using YOLOv4", img)
@@ -167,9 +177,11 @@ class CovidFaceMaskDetection():
         response['inference_time_seconds'] = str(round(end_time,2))
         return response
 
-    def detect_mask_in_image_streamlit(self, our_image): 
+    def detect_mask_in_image_streamlit(self, our_image, confidence_threshold, nms_threshold): 
     
         start_time = time.time()
+        self.confidence_threshold = confidence_threshold
+        self.nms_threshold = nms_threshold
         image, height, width, channels = self.load_image_streamlit(our_image)
         blob, outputs = self.detect_objects(image)
         boxes, confs, class_ids = self.get_box_dimensions(outputs, height, width)
@@ -177,6 +189,52 @@ class CovidFaceMaskDetection():
         end_time = time.time() - start_time
         response['inference_time_seconds'] = str(round(end_time,2))
         return detected_image, response
+
+    def send_mail_to_admin(self, without_mask_count):
+        
+        admin_mail_id = 'replace_admin_email_id'
+        system_mail_id = 'replace_system_email_id'
+        system_mail_id_password = 'replace_system_email_id_password'
+        attachments = [COVID_FACE_MASK_DETECTION_IMAGES + 'detected_image.jpg']
+
+        mail_content = '''Hi Admin,
+
+        Please take the necessary action as {without_mask_count} people without masks are detected.
+
+        Request you to check the attachments too. 
+
+        Hope you will take the action soon.
+
+        This is an auto-generated system mail. Please do not reply!.
+
+        Thank You!
+        '''.format(without_mask_count=without_mask_count)
+
+        #attachments.append(EMBS_RESULT_IMAGE_PATH)
+        message = MIMEMultipart('alternative')
+        message['From'] = system_mail_id
+        message['To'] = admin_mail_id
+        message['Subject'] = 'Covid-19 Face Mask Detection System Alert!'
+        message.attach(MIMEText(mail_content, 'plain'))
+
+        if len('attachments') > 0: 
+            for filename in attachments:
+                attach_file = open(filename, 'rb') 
+                payload = MIMEBase('application', 'octet-stream')
+                payload.set_payload((attach_file).read())
+                encoders.encode_base64(payload) 
+                payload.add_header('Content-Disposition', 'attachment; filename="%s"' %\
+                                 os.path.basename(filename))
+                message.attach(payload)
+
+        session = smtplib.SMTP('smtp.gmail.com', 587) 
+        session.starttls() 
+        session.login(system_mail_id, system_mail_id_password) 
+        text = message.as_string()
+        session.sendmail(system_mail_id, admin_mail_id, text)
+        session.quit()
+        pprint('Alert Mail Sent to Real-time Covid-19 Face Mask Detector System Admin')
+        pprint("---------------------------------------------------")
 
 if __name__ == "__main__":
 
